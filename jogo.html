@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sleeping Gods</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #000; color: #ccc; font-family: monospace; font-size: 16px; min-height: 100vh; }
+.abas { display: flex; border-bottom: 1px solid #222; background: #050505; position: sticky; top: 0; z-index: 100; }
+.aba { padding: 12px 20px; color: #444; cursor: pointer; font-size: 14px; letter-spacing: 1px; border-right: 1px solid #111; border-bottom: 2px solid transparent; }
+.aba:hover { color: #888; }
+.aba.ativa { color: #fff; border-bottom: 2px solid #fff; }
+.topbar { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #111; flex-wrap: wrap; background: #030303; }
+.res { font-size: 14px; padding: 4px 10px; border: 1px solid #1a1a1a; color: #555; cursor: pointer; }
+.res:hover { border-color: #333; color: #888; }
+.res span { color: #aaa; margin-left: 4px; }
+.res .reserva { color: #333; margin-left: 2px; }
+.turno-info { margin-left: auto; color: #333; font-size: 13px; letter-spacing: 1px; }
+.turno-info b { color: #666; }
+.pagina { display: none; padding: 14px; }
+.pagina.ativa { display: block; }
+.fase-title { color: #555; font-size: 13px; letter-spacing: 2px; margin-bottom: 12px; }
+.btn { padding: 8px 16px; background: #111; border: 1px solid #333; color: #888; font-family: monospace; font-size: 14px; cursor: pointer; }
+.btn:hover { border-color: #fff; color: #fff; }
+.btn-main { padding: 10px 24px; background: #fff; border: none; color: #000; font-family: monospace; font-size: 15px; cursor: pointer; font-weight: bold; }
+.btn-main:hover { background: #ccc; }
+.btn-perigo { border-color: #f44; color: #f44; background: #0a0a0a; cursor: pointer; font-family: monospace; font-size: 14px; padding: 8px 16px; }
+.btn-perigo:hover { background: #f44; color: #000; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.muted { color: #444; font-size: 14px; }
+.sep { border-top: 1px solid #111; margin: 10px 0; }
+.navio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.local { border: 1px solid #222; padding: 10px; cursor: pointer; background: #0a0a0a; }
+.local:hover { border-color: #555; }
+.local.selected { border-color: #fff; background: #111; }
+.local.disabled { opacity: 0.3; cursor: not-allowed; }
+.local.last-visited { border-style: dashed; border-color: #333; opacity: 0.4; cursor: not-allowed; }
+.local-name { font-size: 14px; color: #fff; margin-bottom: 4px; }
+.local-desc { font-size: 13px; color: #444; line-height: 1.6; }
+.local-dano { font-size: 13px; color: #f44; float: right; }
+.conves-area, .beneficio-box, .evento-box, .destino-area, .viajar-box, .porto-box { border: 1px solid #222; padding: 12px; margin-bottom: 12px; background: #050505; }
+.fichas-row { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+.ficha { border: 1px solid #333; padding: 6px 12px; font-size: 14px; color: #888; }
+.ficha.revelada { border-color: #4af; color: #4af; }
+.ficha.dano { border-color: #f44; color: #f44; }
+.opcoes-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.opcao-btn { flex: 1; min-width: 140px; padding: 8px; border: 1px solid #333; background: #0a0a0a; color: #888; font-family: monospace; font-size: 14px; cursor: pointer; }
+.opcao-btn.selected { border-color: #fff; color: #fff; }
+.trip-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.trip { border: 1px solid #222; padding: 8px 10px; cursor: pointer; background: #0a0a0a; min-width: 90px; }
+.trip:hover { border-color: #555; }
+.trip.selected { border-color: #4af; }
+.trip.fadiga-max { opacity: 0.4; cursor: not-allowed; }
+.trip-name { font-size: 14px; color: #fff; margin-bottom: 3px; }
+.trip-stats { font-size: 13px; color: #444; }
+.trip-fadiga { color: #fa4; }
+.destino-num { font-size: 40px; color: #fff; min-width: 56px; text-align: center; }
+.destino-info { font-size: 14px; color: #555; line-height: 2; }
+.resultado-ok { color: #4f8; font-size: 16px; }
+.resultado-fail { color: #f44; font-size: 16px; }
+.acoes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+.acao { border: 1px solid #222; padding: 12px; cursor: pointer; background: #0a0a0a; }
+.acao:hover { border-color: #555; }
+.acao.used { opacity: 0.3; cursor: not-allowed; border-style: dashed; }
+.acao.selected { border-color: #fff; background: #111; }
+.acao-name { font-size: 16px; color: #fff; margin-bottom: 4px; }
+.acao-desc { font-size: 13px; color: #444; }
+.evento-tipo { font-size: 13px; letter-spacing: 1px; margin-bottom: 8px; }
+.tipo-brando { color: #4f8; }
+.tipo-perigoso { color: #fa4; }
+.tipo-mortal { color: #f44; }
+.beneficio-item { font-size: 15px; color: #aaa; padding: 4px 0; }
+.trip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.trip-card { border: 1px solid #222; background: #050505; padding: 12px; }
+.trip-card-name { font-size: 16px; color: #fff; margin-bottom: 4px; }
+.trip-card-origin { font-size: 13px; color: #555; margin-bottom: 10px; }
+.stat-row { display: flex; justify-content: space-between; font-size: 14px; padding: 3px 0; border-bottom: 1px solid #0a0a0a; }
+.stat-row .k { color: #555; }
+.stat-row .v { color: #4af; }
+.stat-row .v-red { color: #f44; }
+.stat-row .v-green { color: #4f8; }
+.fadiga-dots { display: flex; gap: 6px; margin: 8px 0; }
+.fadiga-dot { width: 18px; height: 18px; border: 1px solid #333; background: #0a0a0a; cursor: pointer; }
+.fadiga-dot.ativo { background: #fa4; border-color: #fa4; }
+.estados-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.estado-tag { font-size: 13px; padding: 2px 6px; border: 1px solid #1a1a1a; color: #333; cursor: pointer; }
+.estado-tag.ativo { border-color: #f44; color: #f44; }
+.slots-row { display: flex; gap: 6px; margin-top: 8px; }
+.slot { flex: 1; border: 1px dashed #222; padding: 6px; font-size: 13px; color: #333; text-align: center; min-height: 32px; display: flex; align-items: center; justify-content: center; }
+.slot.ocupado { border-color: #4af; color: #4af; border-style: solid; }
+.pericias-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.pericia-tag { font-size: 13px; padding: 2px 6px; border: 1px solid #1a1a1a; color: #333; }
+.pericia-tag.on { border-color: #4af; color: #4af; }
+.hp-row { display: flex; gap: 4px; margin: 8px 0; flex-wrap: wrap; }
+.hp-dot { width: 16px; height: 16px; border: 1px solid #333; background: #f44; cursor: pointer; }
+.hp-dot.perdido { background: #0a0a0a; border-color: #222; }
+.navio-status { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+.local-card { border: 1px solid #222; padding: 12px; background: #050505; }
+.local-card-name { font-size: 15px; color: #fff; margin-bottom: 6px; }
+.local-card-desc { font-size: 13px; color: #444; margin-bottom: 10px; line-height: 1.6; }
+.dano-dots { display: flex; gap: 6px; }
+.dano-dot { width: 18px; height: 18px; border: 1px solid #333; background: #0a0a0a; cursor: pointer; }
+.dano-dot.ativo { background: #f44; border-color: #f44; }
+.navio-hp { border: 1px solid #222; padding: 12px; background: #050505; margin-bottom: 14px; }
+.hp-navio-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.hp-navio-dot { width: 18px; height: 18px; border: 1px solid #333; background: #4af; cursor: pointer; }
+.hp-navio-dot.perdido { background: #0a0a0a; border-color: #222; }
+.search-row { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; }
+.search-input { background: #0a0a0a; border: 1px solid #333; color: #fff; font-family: monospace; font-size: 20px; padding: 10px 14px; width: 160px; }
+.search-input:focus { outline: none; border-color: #fff; }
+.entry-box { border: 1px solid #222; padding: 18px; background: #050505; margin-bottom: 14px; }
+.entry-num { color: #555; font-size: 13px; letter-spacing: 2px; margin-bottom: 14px; }
+.entry-text { line-height: 2.2; color: #bbb; white-space: pre-wrap; font-size: 15px; }
+.goto-link { color: #4af; cursor: pointer; text-decoration: underline; text-decoration-color: #223344; }
+.goto-link:hover { color: #7cf; }
+.pague-goto { display: inline-block; background: #0a0500; border: 1px solid #4a3000; padding: 6px 12px; margin: 4px 0; cursor: pointer; }
+.pague-goto:hover { border-color: #fa4; background: #1a0f00; }
+.pague-label { color: #fa4; }
+.goto-link-inline { color: #4af; text-decoration: underline; }
+.ganhe-btn { display: inline-block; background: #001a0a; border: 1px solid #0a4a20; padding: 6px 12px; margin: 4px 0; cursor: pointer; color: #4f8; }
+.ganhe-btn:hover { border-color: #4f8; background: #002a10; }
+.ganhe-btn.coletado { opacity: 0.4; cursor: default; text-decoration: line-through; }
+.ganhe-coletar { color: #4f8; font-size: 13px; margin-left: 6px; }
+.history-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+.hist-btn { padding: 4px 10px; border: 1px solid #222; color: #555; font-family: monospace; font-size: 14px; cursor: pointer; background: #0a0a0a; }
+.hist-btn:hover { color: #ccc; border-color: #555; }
+.keyword { color: #fa4; }
+.hint { color: #333; font-size: 14px; padding: 20px 0; }
+.not-found { color: #f44; padding: 14px; border: 1px solid #311; background: #050505; }
+.notif { position: fixed; top: 70px; right: 16px; background: #001a0a; border: 1px solid #4f8; color: #4f8; padding: 10px 18px; font-family: monospace; font-size: 15px; z-index: 999; }
+.loading { color: #555; padding: 40px; text-align: center; font-size: 16px; }
+</style>
+</head>
+<body>
+<div class="abas">
+  <div class="aba ativa" data-aba="turno">TURNO</div>
+  <div class="aba" data-aba="tripulantes">TRIPULANTES</div>
+  <div class="aba" data-aba="navio">NAVIO</div>
+  <div class="aba" data-aba="explorar">EXPLORAR</div>
+</div>
+<div class="topbar" id="topbar"></div>
+<div class="pagina ativa" id="pag-turno"></div>
+<div class="pagina" id="pag-tripulantes"></div>
+<div class="pagina" id="pag-navio"></div>
+<div class="pagina" id="pag-explorar">
+  <div class="search-row">
+    <input type="text" class="search-input" id="entrada-input" placeholder="ex: 100" />
+    <button class="btn-main" id="btn-ir">IR</button>
+  </div>
+  <div class="history-bar" id="history-bar"></div>
+  <div id="conteudo-livro"><div class="loading">Carregando livro...</div></div>
+</div>
+
+<script>
+var LIVRO = null;
+fetch('livro.json').then(function(r){return r.json();}).then(function(d){LIVRO=d;document.getElementById('conteudo-livro').innerHTML='<div class="hint">Digite o número de uma entrada e pressione Enter.</div>';}).catch(function(){document.getElementById('conteudo-livro').innerHTML='<div class="not-found">Erro ao carregar livro.json. Coloque ambos os arquivos na mesma pasta.</div>';});
+
+var CHARS_BASE=[{id:'rafael',name:'Rafael Vieira',origin:'New York',hp:7,precisao:3,dano:2,bloqueio:0,weapon:'Hammer',pericias:{astucia:0,percepcao:0,oficio:1,forca:1,experiente:0}},{id:'audrie',name:'Audrie Williams',origin:'Liverpool',hp:5,precisao:1,dano:2,bloqueio:1,weapon:'Wrench',pericias:{astucia:0,percepcao:1,oficio:1,forca:0,experiente:0}},{id:'sofi',name:'Capt. Sofi Odessa',origin:'New York',hp:5,precisao:1,dano:4,bloqueio:1,weapon:'Rifle',pericias:{astucia:1,percepcao:1,oficio:1,forca:1,experiente:1}},{id:'gregory',name:'Gregory Little',origin:'Los Angeles',hp:6,precisao:2,dano:2,bloqueio:0,weapon:'Knife',pericias:{astucia:0,percepcao:0,oficio:0,forca:1,experiente:1}},{id:'kannan',name:'Kannan Sharma',origin:'Chennai',hp:5,precisao:1,dano:3,bloqueio:1,weapon:'Pistol',pericias:{astucia:1,percepcao:0,oficio:0,forca:1,experiente:1}},{id:'kasumi',name:'Kasumi Aoshima',origin:'Osaka',hp:5,precisao:2,dano:3,bloqueio:0,weapon:'Wakizashi',pericias:{astucia:1,percepcao:1,oficio:0,forca:0,experiente:1}},{id:'laurent',name:'Laurent Lapointe',origin:'Quebec City',hp:5,precisao:0,dano:2,bloqueio:2,weapon:'Club',pericias:{astucia:0,percepcao:1,oficio:1,forca:1,experiente:1}},{id:'mac',name:'Mac Mara Johnson',origin:'Atlanta',hp:5,precisao:4,dano:2,bloqueio:0,weapon:'Saber',pericias:{astucia:1,percepcao:1,oficio:0,forca:0,experiente:1}},{id:'marco',name:'Marco Reyes',origin:'Veracruz',hp:5,precisao:1,dano:1,bloqueio:3,weapon:'Frying Pan',pericias:{astucia:1,percepcao:0,oficio:0,forca:1,experiente:0}}];
+var LOCAIS_NAVIO=[{id:'conves',name:'Convés',desc:'3 cmd + até 3 fichas de busca'},{id:'passadico',name:'Passadiço',desc:'2 cmd + 1 carta + retorna comandos'},{id:'enfermaria',name:'Enfermaria',desc:'3 cmd + 1 carta + 1 HP a tripulante'},{id:'porao',name:'Porão',desc:'2 cmd + descarta carta → -1 fadiga'},{id:'camarote',name:'Camarote',desc:'2 cmd + 1 carta + retira 2 cmd alocados'},{id:'casco',name:'Casco',desc:'Sem benefício (absorve dano)'}];
+var PL={astucia:'Astúcia',percepcao:'Percepção',oficio:'Ofício',forca:'Força',experiente:'Experiente'};
+var ESTADOS=['amedrontado','enfraquecido','moral_baixa','veneno','loucura'];
+
+var G={turno:1,fase:1,recursos:{moeda:3,grao:1,carne:0,vegetal:0,artefato:0,xp:0},reserva:{moeda:37,grao:5,carne:6,vegetal:6,artefato:6},comandos:{total:14,disponivel:14},navio:{hp:11,dano:{conves:0,passadico:0,enfermaria:0,porao:0,camarote:0,casco:0}},ultimo_local:null,local_selecionado:null,fichas_sacadas:[],evento:null,opcao_escolhida:null,participantes:[],destino_sacado:null,acoes_usadas:0,acao_ativa:null,viajar_participantes:[],viajar_destino:null,livro_historico:[],livro_entrada_atual:null,missoes:[],cartas_aventura:[],personagens:CHARS_BASE.map(function(c){return Object.assign({},c,{hp_atual:c.hp,fadiga:0,estados:{amedrontado:false,enfraquecido:false,moral_baixa:false,veneno:false,loucura:false},slots:[null,null]});})};
+
+function rnd20(){return Math.floor(Math.random()*20)+1;}
+function sacarFicha(){var t=['moeda','grao','carne','vegetal','artefato','dano 1','dano 2','dano 1','vegetal'];return t[Math.floor(Math.random()*t.length)];}
+function mov(n){if(n<=3)return 1;if(n<=6)return 2;if(n<=8)return 3;return 4;}
+function notif(msg){var n=document.createElement('div');n.className='notif';n.textContent=msg;document.body.appendChild(n);setTimeout(function(){n.remove();},2500);}
+
+var abaAtiva='turno';
+function mudarAba(aba){abaAtiva=aba;document.querySelectorAll('.aba').forEach(function(el){el.classList.toggle('ativa',el.dataset.aba===aba);});document.querySelectorAll('.pagina').forEach(function(el){el.classList.toggle('ativa',el.id==='pag-'+aba);});if(aba==='turno')renderTurno();if(aba==='tripulantes')renderTripulantes();if(aba==='navio')renderNavio();}
+document.querySelectorAll('.aba').forEach(function(el){el.addEventListener('click',function(){mudarAba(this.dataset.aba);});});
+
+function renderTopbar(){var r=G.recursos,rv=G.reserva,c=G.comandos;var items=[{label:'♦ moeda',key:'moeda',val:r.moeda,res:rv.moeda},{label:'⬡ cmd',key:'cmd',val:c.disponivel+'/'+c.total,noEdit:true},{label:'grão',key:'grao',val:r.grao,res:rv.grao},{label:'carne',key:'carne',val:r.carne,res:rv.carne},{label:'vegetal',key:'vegetal',val:r.vegetal,res:rv.vegetal},{label:'★ arte',key:'artefato',val:r.artefato,res:rv.artefato},{label:'✦ xp',key:'xp',val:r.xp,noEdit:true}];var html=items.map(function(item){if(item.noEdit)return '<div class="res">'+item.label+'<span>'+item.val+'</span></div>';return '<div class="res" data-res="'+item.key+'">'+item.label+'<span>'+item.val+'</span><span class="reserva">/'+item.res+'</span></div>';}).join('');html+='<div class="turno-info">turno <b>'+G.turno+'</b> fase <b>'+G.fase+'/3</b></div>';document.getElementById('topbar').innerHTML=html;document.querySelectorAll('.res[data-res]').forEach(function(el){el.addEventListener('click',function(){var key=this.dataset.res,atual=G.recursos[key],novo=prompt('Alterar '+key+' (atual: '+atual+'):',atual);if(novo!==null&&!isNaN(parseInt(novo))){var diff=parseInt(novo)-G.recursos[key];G.recursos[key]=parseInt(novo);if(G.reserva[key]!==undefined)G.reserva[key]=Math.max(0,G.reserva[key]-diff);renderTopbar();}});});}
+
+function renderTurno(){var pag=document.getElementById('pag-turno');if(G.fase===1)pag.innerHTML=buildF1();else if(G.fase===2)pag.innerHTML=buildF2();else pag.innerHTML=buildF3();attachTurno();renderTopbar();}
+
+function buildF1(){var ls=G.local_selecionado;var lh=LOCAIS_NAVIO.map(function(l){var d=G.navio.dano[l.id]||0,max=l.id==='casco'?1:2,des=d>=max,ult=G.ultimo_local===l.id;var cls='local'+(des?' disabled':ult?' last-visited':ls===l.id?' selected':'');var ds=d>0?'<span class="local-dano">'+d+'/'+max+'</span>':'';return '<div class="'+cls+'" data-local="'+l.id+'">'+ds+'<div class="local-name">'+l.name+'</div><div class="local-desc">'+l.desc+'</div></div>';}).join('');var ex='';if(ls==='conves'){var fi=G.fichas_sacadas,fh=fi.map(function(f){return '<span class="ficha '+(f.includes('dano')?'dano':'revelada')+'">'+f+'</span>';}).join('')||'<span class="muted">nenhuma sacada</span>';ex='<div class="conves-area"><div class="fase-title">FICHAS DE BUSCA ('+fi.length+'/3)</div><div class="fichas-row">'+fh+'</div>'+(fi.length<3?'<button class="btn" id="btn-sf">Sacar ficha</button>':'')+'</div>';}else if(ls&&ls!=='casco'){var l=LOCAIS_NAVIO.find(function(x){return x.id===ls;});ex='<div class="beneficio-box"><div class="fase-title">BENEFÍCIO</div><div class="beneficio-item">'+l.desc+'</div></div>';}return '<div class="fase-title">// FASE 1 — NAVIO</div><div class="navio-grid">'+lh+'</div>'+ex+(ls?'<div class="row" style="margin-top:12px"><button class="btn-main" id="btn-f1">AVANÇAR →</button></div>':'');}
+
+function buildF2(){var evt=G.evento||{tipo:'brando',texto:'Águas calmas. Teste OFÍCIO 5.',opcoes:['Teste OFÍCIO 5','Ignorar'],pericia:'oficio',dificuldade:5};var tc=evt.tipo==='brando'?'tipo-brando':evt.tipo==='perigoso'?'tipo-perigoso':'tipo-mortal';var os=G.opcao_escolhida;var oh=evt.opcoes.map(function(o,i){return '<button class="opcao-btn'+(os===i?' selected':'')+'" data-opcao="'+i+'">'+o+'</button>';}).join('');var per=os===0?evt.pericia:null;var th=per?G.personagens.map(function(p){var fm=p.fadiga>=2,sel=G.participantes.includes(p.id);return '<div class="trip'+(fm?' fadiga-max':sel?' selected':'')+'" data-trip="'+p.id+'"><div class="trip-name">'+p.name.split(' ')[0]+'</div><div class="trip-stats">'+per+': '+p.pericias[per]+' <span class="trip-fadiga">f:'+p.fadiga+'/2</span></div></div>';}).join(''):'';var tp=G.participantes.reduce(function(a,id){var p=G.personagens.find(function(x){return x.id===id;});return a+(p?p.pericias[evt.pericia]:0);},0);var dh='';if(G.participantes.length>0||os===1){dh='<div class="destino-area row"><button class="btn" id="btn-d2">Sacar destino</button>'+(G.destino_sacado!==null?'<div class="destino-num">'+G.destino_sacado+'</div><div class="destino-info">perícia: '+tp+'<br>total: '+(tp+G.destino_sacado)+'<br>dif: '+evt.dificuldade+'<br>'+(tp+G.destino_sacado>=evt.dificuldade?'<span class="resultado-ok">✓ SUCESSO</span>':'<span class="resultado-fail">✗ FRACASSO</span>')+'</div>':'')+'</div>';}var pa=G.destino_sacado!==null||os===1;return '<div class="fase-title">// FASE 2 — EVENTO</div><div class="evento-box"><div class="evento-tipo '+tc+'">'+evt.tipo.toUpperCase()+'</div><div class="muted">'+evt.texto+'</div><div class="sep"></div><div class="opcoes-row">'+oh+'</div>'+(per&&os===0?'<div class="fase-title" style="margin:8px 0">PARTICIPANTES ('+per.toUpperCase()+')</div><div class="trip-row">'+th+'</div>':'')+dh+'</div>'+(pa?'<div class="row" style="margin-top:12px"><button class="btn-main" id="btn-f2">AVANÇAR →</button></div>':'');}
+
+function buildF3(){var ac=[{id:'viajar',name:'Viajar',desc:'Teste OFÍCIO → move o navio'},{id:'explorar',name:'Explorar',desc:'Lê o livro de histórias'},{id:'mercado',name:'Mercado',desc:'Compra itens e cartas'},{id:'porto',name:'Porto',desc:'Repara navio, cura tripulantes'}];var ah=ac.map(function(a){var used=G.acoes_usadas>=2&&G.acao_ativa!==a.id,sel=G.acao_ativa===a.id;return '<div class="acao'+(used?' used':sel?' selected':'')+'" data-acao="'+a.id+'"><div class="acao-name">'+a.name+'</div><div class="acao-desc">'+a.desc+'</div></div>';}).join('');var area='';if(G.acao_ativa==='viajar'){var th=G.personagens.map(function(p){var fm=p.fadiga>=2,sel=G.viajar_participantes.includes(p.id);return '<div class="trip'+(fm?' fadiga-max':sel?' selected':'')+'" data-vtrip="'+p.id+'"><div class="trip-name">'+p.name.split(' ')[0]+'</div><div class="trip-stats">ofício: '+p.pericias.oficio+' <span class="trip-fadiga">f:'+p.fadiga+'/2</span></div></div>';}).join('');var to=G.viajar_participantes.reduce(function(a,id){var p=G.personagens.find(function(x){return x.id===id;});return a+(p?p.pericias.oficio:0);},0);area='<div class="viajar-box"><div class="fase-title">VIAJAR</div><div class="trip-row">'+th+'</div><div class="row"><button class="btn" id="btn-d3">Sacar destino</button>'+(G.viajar_destino!==null?'<div class="destino-num">'+G.viajar_destino+'</div><div class="destino-info">total: '+(to+G.viajar_destino)+'<br><span class="resultado-ok">move '+mov(to+G.viajar_destino)+' espaço(s)</span></div>':'')+'</div>'+(G.viajar_destino!==null?'<button class="btn" id="btn-cv" style="margin-top:10px">Confirmar</button>':'')+'</div>';}else if(G.acao_ativa==='explorar'){area='<div class="beneficio-box"><div class="muted">Acesse a aba EXPLORAR.</div><button class="btn" id="btn-ca" style="margin-top:10px">Confirmar ação</button></div>';}else if(G.acao_ativa==='mercado'){area='<div class="beneficio-box"><div class="muted">Consulte as cartas de mercado.</div><button class="btn" id="btn-ca" style="margin-top:10px">Confirmar ação</button></div>';}else if(G.acao_ativa==='porto'){area='<div class="porto-box"><div class="fase-title">PORTO</div><div class="beneficio-item">Hospedaria — 4 moedas → todos: +2 HP, -1 fadiga</div><div class="beneficio-item">Estaleiro — 1 moeda/material → repara 1 dano navio</div><div class="beneficio-item">Curandeiro — 1 moeda → vida total de 1 personagem</div><div class="beneficio-item">Gaste XP → cartas de nível</div><button class="btn" id="btn-ca" style="margin-top:10px">Confirmar ação</button></div>';}return '<div class="fase-title">// FASE 3 — AÇÕES ('+G.acoes_usadas+'/2)</div><div class="acoes-grid">'+ah+'</div>'+area+(G.acoes_usadas>=2?'<div class="row" style="margin-top:14px"><button class="btn-main" id="btn-pt">PASSAR TURNO →</button></div>':'');}
+
+function attachTurno(){
+  document.querySelectorAll('.local:not(.disabled):not(.last-visited)').forEach(function(el){el.addEventListener('click',function(){G.local_selecionado=this.dataset.local;G.fichas_sacadas=[];renderTurno();});});
+  var e;
+  e=document.getElementById('btn-sf');if(e)e.addEventListener('click',function(){if(G.fichas_sacadas.length<3){G.fichas_sacadas.push(sacarFicha());renderTurno();}});
+  e=document.getElementById('btn-f1');if(e)e.addEventListener('click',function(){G.ultimo_local=G.local_selecionado;G.fase=2;G.evento={tipo:'brando',texto:'Águas calmas. Teste OFÍCIO 5.',opcoes:['Teste OFÍCIO 5','Ignorar'],pericia:'oficio',dificuldade:5};renderTurno();});
+  document.querySelectorAll('.opcao-btn').forEach(function(el){el.addEventListener('click',function(){G.opcao_escolhida=parseInt(this.dataset.opcao);G.participantes=[];G.destino_sacado=null;renderTurno();});});
+  document.querySelectorAll('.trip[data-trip]').forEach(function(el){el.addEventListener('click',function(){if(this.classList.contains('fadiga-max'))return;var id=this.dataset.trip,idx=G.participantes.indexOf(id);if(idx>=0)G.participantes.splice(idx,1);else G.participantes.push(id);renderTurno();});});
+  e=document.getElementById('btn-d2');if(e)e.addEventListener('click',function(){G.destino_sacado=rnd20();G.participantes.forEach(function(id){var p=G.personagens.find(function(x){return x.id===id;});if(p&&p.fadiga<2)p.fadiga++;});renderTurno();});
+  e=document.getElementById('btn-f2');if(e)e.addEventListener('click',function(){G.fase=3;G.opcao_escolhida=null;G.participantes=[];G.destino_sacado=null;renderTurno();});
+  document.querySelectorAll('.acao:not(.used)').forEach(function(el){el.addEventListener('click',function(){if(G.acoes_usadas>=2)return;G.acao_ativa=this.dataset.acao;G.viajar_participantes=[];G.viajar_destino=null;if(G.acao_ativa==='explorar'){G.acoes_usadas++;G.acao_ativa=null;mudarAba('explorar');}else renderTurno();});});
+  document.querySelectorAll('[data-vtrip]').forEach(function(el){el.addEventListener('click',function(){if(this.classList.contains('fadiga-max'))return;var id=this.dataset.vtrip,idx=G.viajar_participantes.indexOf(id);if(idx>=0)G.viajar_participantes.splice(idx,1);else G.viajar_participantes.push(id);renderTurno();});});
+  e=document.getElementById('btn-d3');if(e)e.addEventListener('click',function(){G.viajar_destino=rnd20();renderTurno();});
+  e=document.getElementById('btn-cv');if(e)e.addEventListener('click',function(){G.viajar_participantes.forEach(function(id){var p=G.personagens.find(function(x){return x.id===id;});if(p&&p.fadiga<2)p.fadiga++;});G.acoes_usadas++;G.acao_ativa=null;G.viajar_participantes=[];G.viajar_destino=null;renderTurno();});
+  e=document.getElementById('btn-ca');if(e)e.addEventListener('click',function(){G.acoes_usadas++;G.acao_ativa=null;renderTurno();});
+  e=document.getElementById('btn-pt');if(e)e.addEventListener('click',function(){G.turno++;G.fase=1;G.local_selecionado=null;G.fichas_sacadas=[];G.acoes_usadas=0;G.acao_ativa=null;renderTurno();});
+}
+
+function renderTripulantes(){var html='<div class="trip-grid">';G.personagens.forEach(function(p){var hd='';for(var i=0;i<p.hp;i++)hd+='<div class="hp-dot'+(i>=p.hp_atual?' perdido':'')+'" data-pid="'+p.id+'" data-hp="'+i+'"></div>';var fd='<div class="fadiga-dot'+(p.fadiga>0?' ativo':'')+'" data-pid="'+p.id+'" data-fi="0"></div><div class="fadiga-dot'+(p.fadiga>1?' ativo':'')+'" data-pid="'+p.id+'" data-fi="1"></div>';var eh=ESTADOS.map(function(e){return '<span class="estado-tag'+(p.estados[e]?' ativo':'')+'" data-pid="'+p.id+'" data-estado="'+e+'">'+e.replace('_',' ')+'</span>';}).join('');var ph=Object.entries(p.pericias).map(function(kv){return '<span class="pericia-tag'+(kv[1]?' on':'')+'">'+(PL[kv[0]]||kv[0])+'</span>';}).join('');html+='<div class="trip-card"><div class="trip-card-name">'+p.name.split(' ')[0]+'</div><div class="trip-card-origin">'+p.origin+'</div><div class="stat-row"><span class="k">HP</span><span class="v-red">'+p.hp_atual+'/'+p.hp+'</span></div><div class="hp-row">'+hd+'</div><div class="stat-row"><span class="k">fadiga</span><span class="v">'+p.fadiga+'/2</span></div><div class="fadiga-dots">'+fd+'</div><div class="stat-row"><span class="k">precisão</span><span class="v">+'+p.precisao+'</span></div><div class="stat-row"><span class="k">dano</span><span class="v-red">'+p.dano+'</span></div><div class="stat-row"><span class="k">bloqueio</span><span class="v-green">'+p.bloqueio+'</span></div><div class="pericias-row">'+ph+'</div><div class="estados-row">'+eh+'</div><div class="slots-row"><div class="slot'+(p.slots[0]?' ocupado':'')+'">'+(p.slots[0]||'slot 1')+'</div><div class="slot'+(p.slots[1]?' ocupado':'')+'">'+(p.slots[1]||'slot 2')+'</div></div></div>';});html+='</div>';document.getElementById('pag-tripulantes').innerHTML=html;
+document.querySelectorAll('.hp-dot').forEach(function(el){el.addEventListener('click',function(){var p=G.personagens.find(function(x){return x.id===this.dataset.pid;}.bind(this));if(!p)return;var i=parseInt(this.dataset.hp);p.hp_atual=this.classList.contains('perdido')?i+1:i;if(p.hp_atual>p.hp)p.hp_atual=p.hp;renderTripulantes();});});
+document.querySelectorAll('.fadiga-dot').forEach(function(el){el.addEventListener('click',function(){var p=G.personagens.find(function(x){return x.id===this.dataset.pid;}.bind(this));if(!p)return;var idx=parseInt(this.dataset.fi);p.fadiga=(p.fadiga>idx)?idx:idx+1;if(p.fadiga>2)p.fadiga=2;renderTripulantes();});});
+document.querySelectorAll('.estado-tag').forEach(function(el){el.addEventListener('click',function(){var p=G.personagens.find(function(x){return x.id===this.dataset.pid;}.bind(this));if(!p)return;p.estados[this.dataset.estado]=!p.estados[this.dataset.estado];renderTripulantes();});});}
+
+function renderNavio(){var hd='';for(var i=0;i<11;i++)hd+='<div class="hp-navio-dot'+(i>=G.navio.hp?' perdido':'')+'" data-nhp="'+i+'"></div>';var lh=LOCAIS_NAVIO.map(function(l){var d=G.navio.dano[l.id]||0,m=l.id==='casco'?1:2;return '<div class="local-card"><div class="local-card-name">'+l.name+'</div><div class="local-card-desc">'+l.desc+'</div><div class="dano-dots"><div class="dano-dot'+(d>0?' ativo':'')+'" data-local="'+l.id+'" data-di="0"></div>'+(m>1?'<div class="dano-dot'+(d>1?' ativo':'')+'" data-local="'+l.id+'" data-di="1"></div>':'')+'</div></div>';}).join('');document.getElementById('pag-navio').innerHTML='<div class="navio-hp"><div class="fase-title">HP DO NAVIO</div><div class="stat-row"><span class="k">resistência</span><span class="v-red">'+G.navio.hp+'/11</span></div><div class="hp-navio-row">'+hd+'</div></div><div class="navio-status">'+lh+'</div>';
+document.querySelectorAll('.hp-navio-dot').forEach(function(el){el.addEventListener('click',function(){var i=parseInt(this.dataset.nhp);G.navio.hp=this.classList.contains('perdido')?i+1:i;if(G.navio.hp>11)G.navio.hp=11;renderNavio();});});
+document.querySelectorAll('.dano-dot').forEach(function(el){el.addEventListener('click',function(){var loc=this.dataset.local,di=parseInt(this.dataset.di),at=G.navio.dano[loc]||0,mx=loc==='casco'?1:2;G.navio.dano[loc]=(at>di)?di:di+1;if(G.navio.dano[loc]>mx)G.navio.dano[loc]=mx;renderNavio();});});}
+
+function processarGanhe(g){var msgs=[];[{re:/(\d+)\s*moeda/i,k:'moeda'},{re:/(\d+)\s*grão/i,k:'grao'},{re:/(\d+)\s*grao/i,k:'grao'},{re:/(\d+)\s*carne/i,k:'carne'},{re:/(\d+)\s*vegetal/i,k:'vegetal'},{re:/(\d+)\s*artefato/i,k:'artefato'},{re:/(\d+)\s*xp/i,k:'xp'}].forEach(function(rm){var m=g.match(rm.re);if(m){var q=parseInt(m[1]);G.recursos[rm.k]=(G.recursos[rm.k]||0)+q;if(G.reserva[rm.k]!==undefined)G.reserva[rm.k]=Math.max(0,G.reserva[rm.k]-q);msgs.push('+'+q+' '+rm.k);}});var mm=g.match(/missão (\d+)/i);if(mm){G.missoes.push(mm[1]);msgs.push('missão #'+mm[1]);}var am=g.match(/carta de aventura (\d+) \(([^)]+)\)/i);if(am){G.cartas_aventura.push({num:am[1],nome:am[2]});msgs.push('aventura: '+am[2]);}notif(msgs.length>0?'✦ '+msgs.join(' | '):'Aplique: '+g.substring(0,50));renderTopbar();}
+
+function detectarRecurso(c){var q=1,m=c.match(/(\d+)/);if(m)q=parseInt(m[1]);var cl=c.toLowerCase();if(cl.includes('moeda'))return{key:'moeda',qtd:q};if(cl.includes('grão')||cl.includes('grao'))return{key:'grao',qtd:q};if(cl.includes('carne'))return{key:'carne',qtd:q};if(cl.includes('vegetal'))return{key:'vegetal',qtd:q};if(cl.includes('artefato'))return{key:'artefato',qtd:q};if(cl.includes('comida'))return{key:'grao',qtd:q};return null;}
+
+function livroIrPara(num){if(!LIVRO){notif('Livro carregando...');return;}var input=document.getElementById('entrada-input'),chave=(num!==undefined)?String(num):input.value.trim();if(!chave)return;if(G.livro_entrada_atual&&G.livro_historico[G.livro_historico.length-1]!==G.livro_entrada_atual){G.livro_historico.push(G.livro_entrada_atual);if(G.livro_historico.length>15)G.livro_historico.shift();}G.livro_entrada_atual=chave;input.value=chave;livroMostrar(chave);livroHistorico();document.getElementById('pag-explorar').scrollTop=0;}
+
+function livroMostrar(chave){var caixa=document.getElementById('conteudo-livro');if(!LIVRO[chave]){caixa.innerHTML='<div class="not-found">Entrada "'+chave+'" não encontrada.</div>';return;}var t=LIVRO[chave],tr=/retorne ao navio/i.test(t);var rh=tr?'<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1a1a1a"><button class="btn-perigo" id="btn-rl">← RETORNAR AO NAVIO</button></div>':'';caixa.innerHTML='<div class="entry-box"><div class="entry-num">// ENTRADA '+chave+'</div><div class="entry-text">'+t+'</div>'+rh+'</div>';
+document.querySelectorAll('.goto-link').forEach(function(el){el.addEventListener('click',function(){livroIrPara(this.dataset.dest);});});
+document.querySelectorAll('.ganhe-btn').forEach(function(el){el.addEventListener('click',function(){if(this.classList.contains('coletado'))return;processarGanhe(this.dataset.ganhe);this.classList.add('coletado');});});
+document.querySelectorAll('.pague-goto').forEach(function(el){el.addEventListener('click',function(){var custo=this.dataset.custo,dest=this.dataset.dest,rec=detectarRecurso(custo);if(rec&&G.recursos[rec.key]<rec.qtd){alert('Insuficiente: '+custo);return;}if(rec){if(!confirm('Pagar '+custo+'?'))return;G.recursos[rec.key]-=rec.qtd;if(G.reserva[rec.key]!==undefined)G.reserva[rec.key]+=rec.qtd;renderTopbar();}else{if(!confirm(custo+'\nConfirme manualmente e clique OK.'))return;}livroIrPara(dest);});});
+var br=document.getElementById('btn-rl');if(br)br.addEventListener('click',function(){if(confirm('Retornar ao navio?'))mudarAba('turno');});}
+
+function livroHistorico(){var bar=document.getElementById('history-bar');if(G.livro_historico.length===0){bar.innerHTML='';return;}bar.innerHTML=G.livro_historico.map(function(h){return '<button class="hist-btn" data-hist="'+h+'">'+h+'</button>';}).join('')+'<span style="color:#333;font-size:13px;align-self:center">&nbsp;← histórico</span>';document.querySelectorAll('.hist-btn').forEach(function(el){el.addEventListener('click',function(){livroIrPara(this.dataset.hist);});});}
+
+document.getElementById('btn-ir').addEventListener('click',function(){livroIrPara();});
+document.getElementById('entrada-input').addEventListener('keydown',function(e){if(e.key==='Enter')livroIrPara();});
+
+renderTurno();
+renderTopbar();
+</script>
+</body>
+</html>
